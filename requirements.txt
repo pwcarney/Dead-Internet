@@ -1,0 +1,6 @@
+openai
+beautifulsoup4
+flask
+diffusers
+xformers
+torch

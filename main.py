@@ -32,4 +32,3 @@ if __name__ == "__main__":
     Timer(1, open_browser).start()  # Wait 1 second for the server to start
 
     app.run(use_reloader=False)  # Disable the reloader if it interferes with opening the browser
-    print(engine.export_internet())

@@ -1,6 +1,7 @@
 import json
 from openai import OpenAI
 from bs4 import BeautifulSoup
+from ImageGen import ImageGen
 
 ''' About the name...
 I apologise for it sounding pretentious or whatever, but I dont care it sounds cool and cyberpunk-y(-ish)
@@ -10,29 +11,46 @@ and fits with the Dead Internet Theory theme of this little project
 class ReaperEngine:
     def __init__(self):
         self.client = OpenAI(base_url="http://localhost:11434/v1/", api_key="Dead Internet") # Ollama is pretty cool
-        self.internet_db = dict() # TODO: Exporting this sounds like a good idea, losing all your pages when you kill the script kinda sucks ngl, also loading it is a thing too
+        self.internet_db = dict() 
+
+        self.image_gen = ImageGen() 
 
         self.temperature = 2.1 # Crank up for goofier webpages (but probably less functional javascript)
-        self.max_tokens = 4096
-        self.system_prompt = "You are an expert in creating realistic webpages. You do not create sample pages, instead you create webpages that are completely realistic and look as if they really existed on the web. You do not respond with anything but HTML, starting your messages with <!DOCTYPE html> and ending them with </html>. If a requested page is not a HTML document, for example a CSS or Javascript file, write that language instead of writing any HTML. If the requested page is instead an image file or other non-text resource, attempt to generate an appropriate resource for it instead of writing any HTML. You use very little to no images at all in your HTML, CSS or JS."
+        self.max_tokens = 8000
+        self.system_prompt = "You are an expert in creating minimalistic, modern webpages. You do not create sample pages, instead you create webpages that are completely realistic and look as if they really existed on the web. You do not respond with anything but HTML, starting your messages with <!DOCTYPE html> and ending them with </html>. If a requested page is not a HTML document, for example a CSS or Javascript file, write that language instead of writing any HTML. If the requested page is instead an image file or other non-text resource, attempt to generate an appropriate resource for it instead of writing any HTML."
     
     def _format_page(self, dirty_html):
-        # Teensy function to sanitize links on the page so they link to the root of the server
-        # Also to get rid of any http(s), this'll help make the link database more consistent
         soup = BeautifulSoup(dirty_html, "html.parser")
+
+        # Check if <head> exists, if not create one
+        head = soup.head
+        if head is None:
+            head = soup.new_tag("head")
+            soup.html.insert(0, head)
+
+        # Add the stylesheet link
+        link_tag = soup.new_tag("link", rel="stylesheet", href="static/ghost.css")
+        head.append(link_tag)
+
+        # Image generation
+        for img in soup.find_all("img"):
+            src = img.get("src", "")
+            if src.startswith("generate:"):
+                prompt = src.split("generate:", 1)[1]
+                output_name = "gen_" + prompt.replace(" ", "_")[:50] 
+                self.image_gen.generate_image(prompt, output_name)
+                img['src'] = f"./images/{output_name}.png"
+
+        # Process anchor tags as before
         for a in soup.find_all("a"):
-            print(a["href"])
             if "mailto:" in a["href"]:
                 continue
-            a["href"] = a["href"].replace("http://", "")
-            a["href"] = a["href"].replace("https://", "")
+            a["href"] = a["href"].replace("http://", "").replace("https://", "")
             a["href"] = "/" + a["href"]
 
-        # Create a new 'a' tag for the Home button
+        # Additional HTML modifications as before
         home_button = soup.new_tag("a", href="/")
         home_button.string = "Home"
-
-        # Insert the Home button at the start of the body element
         body = soup.body
         if body:
             body.insert(0, home_button)
@@ -50,7 +68,7 @@ class ReaperEngine:
         except: pass
         
         # Construct the basic prompt
-        prompt = f"Give me a classic geocities-style webpage from the fictional site of '{url}' at the resource path of '{path}'. Make sure all links generated either link to an external website, or if they link to another resource on the current website have the current url prepended ({url}) to them. For example if a link on the page has the href of 'help' or '/help', it should be replaced with '{url}/path'."
+        prompt = f"Give me a webpage from the fictional site of '{url}' at the resource path of '{path}'. Make sure all links generated either link to an external website, or if they link to another resource on the current website have the current url prepended ({url}) to them. For example if a link on the page has the href of 'help' or '/help', it should be replaced with '{url}/help'."
         # TODO: I wanna add all other pages to the prompt so the next pages generated resemble them, but since Llama 3 is only 8k context I hesitate to do so
 
         # Add other pages to the prompt if they exist
@@ -82,7 +100,7 @@ class ReaperEngine:
         return self._format_page(generated_page)
     
     def get_search(self, query):
-        # Generates a cool little search page, this differs in literally every search and is not cached so be weary of losing links
+        # Generates a cool little search page, this differs in literally every search and is not cached so be wary of losing links
         search_page_completion = self.client.chat.completions.create(messages=[
             {
                 "role": "system",
@@ -99,11 +117,3 @@ class ReaperEngine:
 
         return self._format_page(search_page_completion.choices[0].message.content)
 
-    def export_internet(self, filename="internet.json"):
-        json.dump(self.internet_db, open(filename, "w+"))
-        russells  = "Russell: I'm reading it here on my computer. I downloaded the internet before the war.\n"
-        russells += "Alyx: You downloaded the entire internet.\n"
-        russells += "Russell: Ehh, most of it.\n"
-        russells += "Alyx: Nice.\n"
-        russells += "Russell: Yeah, yeah it is."
-        return russells

@@ -1,13 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" type="text/css" href="/static/styles.css">
+    <title>Enter the Dead Internet</title>
+    <link rel="stylesheet" type="text/css" href="/static/ghost.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        form {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        input[type='text'] {
+            margin-bottom: 1rem;
+            width: calc(100% - 22px); /* Account for padding and border */
+        }
+        input[type='submit'] {
+            cursor: pointer;
+            background-color: #33C3F0;
+            color: white;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        input[type='submit']:hover, input[type='submit']:focus {
+            background-color: #1EAEDB;
+        }
+    </style>
 </head>
 <body>
     <form action='/'>
-        <h3>Enter the Dead Internet</h3>
-        <input type='text' name='query' placeholder='Search'>
-        <input type='submit' value='Search'>
+        <h2>Enter the Dead Internet</h2>
+        <input type='text' name='query' placeholder='Search' class="u-full-width">
+        <input type='submit' value='Search' class="button-primary u-full-width">
     </form>
 </body>
 </html>

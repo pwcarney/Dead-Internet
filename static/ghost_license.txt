@@ -1,0 +1,8 @@
+/*
+* Ghost V0.0.1
+* Copyright 2024, Patrick Carney
+* Pared down Skeleton for LLM contexts
+* Free to use under the MIT license.
+* http://www.opensource.org/licenses/mit-license.php
+* 4/24/2024
+*/
