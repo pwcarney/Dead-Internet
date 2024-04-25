@@ -16,8 +16,6 @@ def index(path):
         return engine.get_index()
     if query and not path:
         return engine.get_search(query)
-    if path == "_export":
-        return engine.export_internet()
     
     # Generate the page
     parsed_path = urlparse("http://" + path)

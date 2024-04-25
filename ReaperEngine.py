@@ -10,14 +10,18 @@ and fits with the Dead Internet Theory theme of this little project
 
 class ReaperEngine:
     def __init__(self):
-        self.client = OpenAI(base_url="http://localhost:11434/v1/", api_key="Dead Internet") # Ollama is pretty cool
+        self.client = OpenAI(base_url="http://localhost:11434/v1/") # Ollama is pretty cool
         self.internet_db = dict() 
 
         self.image_gen = ImageGen() 
 
         self.temperature = 2.1 # Crank up for goofier webpages (but probably less functional javascript)
         self.max_tokens = 8000
-        self.system_prompt = "You are an expert in creating minimalistic, modern webpages. You do not create sample pages, instead you create webpages that are completely realistic and look as if they really existed on the web. You do not respond with anything but HTML, starting your messages with <!DOCTYPE html> and ending them with </html>. If a requested page is not a HTML document, for example a CSS or Javascript file, write that language instead of writing any HTML. If the requested page is instead an image file or other non-text resource, attempt to generate an appropriate resource for it instead of writing any HTML."
+
+        with open("static/ghost.css", "r") as css_file:
+            css_content = css_file.read()
+
+        self.system_prompt = "You are an expert in creating minimalistic, modern webpages. You do not create sample pages, instead you create full html of webpages that look as if they really exist on the web. You do not respond with anything but HTML, starting your messages with <!DOCTYPE html> and ending them with </html>.You have the following styles available to you: <style>{css_content}</style>. You do not need to include the styles in your output, that will be done for you in a post-processing step."
     
     def _format_page(self, dirty_html):
         soup = BeautifulSoup(dirty_html, "html.parser")
