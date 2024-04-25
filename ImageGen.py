@@ -20,8 +20,6 @@ class ImageGen:
         self.pipe.scheduler = TCDScheduler.from_config(self.pipe.scheduler.config)
         self.pipe.load_lora_weights(tcd_lora_id)
         self.pipe.fuse_lora()
-        
-        self.sampling_schedule = [999, 850, 736, 645, 545, 455, 343, 233, 124,  24,   0]
 
     def generate_image(self, prompt, output_name):
             output_image = self.pipe(
@@ -29,7 +27,7 @@ class ImageGen:
                 num_inference_steps=4,
                 guidance_scale=0,
                 eta=0.3, 
-                generator=torch.Generator(device="cuda").manual_seed(random.randint(1, 100000)),
+                generator=torch.Generator(device="cuda").manual_seed(random.randint(1, 1000)),
             ).images[0]
             print("Running image generation...")
             print(prompt)
