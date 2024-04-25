@@ -4,3 +4,5 @@ flask
 diffusers
 xformers
 torch
+peft
+transformers

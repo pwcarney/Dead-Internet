@@ -1,43 +1,44 @@
 import os
 import torch
-from diffusers import StableDiffusionXLPipeline, UNet2DConditionModel, EulerDiscreteScheduler
-from huggingface_hub import hf_hub_download
-from safetensors.torch import load_file
-
+import random
+from diffusers import StableDiffusionPipeline, TCDScheduler
+import numpy as np
+from diffusers import DPMSolverMultistepScheduler as DefaultDPMSolver
 
 class ImageGen:
     def __init__(self):
         # Set the environment variable to disable the warning for symlinks
         os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = '1'
 
-        model_dir = "./sd_model"  # Directory to save the model
         self.images_dir = "./images"  # Directory to save output images
 
         # Create directories if they do not exist
-        os.makedirs(model_dir, exist_ok=True)
         os.makedirs(self.images_dir, exist_ok=True)
 
-        base = "stabilityai/stable-diffusion-xl-base-1.0"
-        repo = "ByteDance/SDXL-Lightning"
-        ckpt = "sdxl_lightning_2step_unet.safetensors"
-
-        # Download and load the model
-        model_path = hf_hub_download(repo, ckpt, cache_dir=model_dir)
-        config = UNet2DConditionModel.load_config(base, subfolder="unet")
-        unet = UNet2DConditionModel.from_config(config).to("cuda", torch.float16)
-        unet.load_state_dict(load_file(model_path, device="cuda"))
-
-        # Initialize the pipeline with the downloaded model
-        self.pipe = StableDiffusionXLPipeline.from_pretrained(base, unet=unet, torch_dtype=torch.float16, variant="fp16").to("cuda")
-
-        # Adjust the scheduler as required
-        self.pipe.scheduler = EulerDiscreteScheduler.from_config(self.pipe.scheduler.config, timestep_spacing="trailing")
+        tcd_lora_id = "h1t/TCD-SD15-LoRA"
+        self.pipe = StableDiffusionPipeline.from_pretrained('lykon/dreamshaper-8', torch_dtype=torch.float16, variant="fp16").to("cuda")
+        self.pipe.scheduler = TCDScheduler.from_config(self.pipe.scheduler.config)
+        self.pipe.load_lora_weights(tcd_lora_id)
+        self.pipe.fuse_lora()
+        
+        self.sampling_schedule = [999, 850, 736, 645, 545, 455, 343, 233, 124,  24,   0]
 
     def generate_image(self, prompt, output_name):
-            # Generate the image, specifying the number of inference steps and guidance scale
-            output_image = self.pipe(prompt, num_inference_steps=2, guidance_scale=0).images[0]
+            output_image = self.pipe(
+                prompt=prompt,
+                num_inference_steps=4,
+                guidance_scale=0,
+                eta=0.3, 
+                generator=torch.Generator(device="cuda").manual_seed(random.randint(1, 100000)),
+            ).images[0]
             print("Running image generation...")
             print(prompt)
 
             # Save the output image in the specified directory with a unique name for each image
             output_image.save(os.path.join(self.images_dir, output_name + ".png"))
+
+# Code to execute only if this module is run directly
+if __name__ == "__main__":
+    image_gen = ImageGen()
+    prompt = "beautiful sunset"
+    image_gen.generate_image(prompt, "beautiful_sunset")
