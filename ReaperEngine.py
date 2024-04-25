@@ -13,16 +13,11 @@ class ReaperEngine:
         self.client = OpenAI(base_url="http://localhost:11434/v1/") # Ollama is pretty cool
         self.internet_db = dict() 
 
-        self.image_gen = ImageGen() 
+        #self.image_gen = ImageGen() 
 
-        self.temperature = 2.1 # Crank up for goofier webpages (but probably less functional javascript)
+        self.temperature = 2.1
         self.max_tokens = 8000
 
-        with open("static/ghost.css", "r") as css_file:
-            css_content = css_file.read()
-
-        self.system_prompt = "You are an expert in creating minimalistic, modern webpages. You do not create sample pages, instead you create full html of webpages that look as if they really exist on the web. You do not respond with anything but HTML, starting your messages with <!DOCTYPE html> and ending them with </html>.You have the following styles available to you: <style>{css_content}</style>. You do not need to include the styles in your output, that will be done for you in a post-processing step."
-    
     def _format_page(self, dirty_html):
         soup = BeautifulSoup(dirty_html, "html.parser")
 
@@ -103,21 +98,5 @@ class ReaperEngine:
         open("curpage.html", "w+").write(generated_page)
         return self._format_page(generated_page)
     
-    def get_search(self, query):
-        # Generates a cool little search page, this differs in literally every search and is not cached so be wary of losing links
-        search_page_completion = self.client.chat.completions.create(messages=[
-            {
-                "role": "system",
-                "content": self.system_prompt
-            },
-            {
-                "role": "user",
-                "content": f"Generate the search results page for a ficticious search engine where the search query is '{query}'. Please include at least 10 results to different ficticious websites that relate to the query. DO NOT link to any real websites, every link should lead to a ficticious website. Feel free to add a bit of CSS to make the page look nice. Each search result will link to its own unique website that has nothing to do with the search engine. Make sure each ficticious website has a unique and somewhat creative URL. Don't mention that the results are ficticious."
-            }],
-            model="llama3",
-            temperature=self.temperature,
-            max_tokens=self.max_tokens
-        )
 
-        return self._format_page(search_page_completion.choices[0].message.content)
 
