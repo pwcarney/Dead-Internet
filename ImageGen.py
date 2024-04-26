@@ -10,7 +10,7 @@ class ImageGen:
         # Set the environment variable to disable the warning for symlinks
         os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = '1'
 
-        self.images_dir = "./images"  # Directory to save output images
+        self.images_dir = "./static/images"  # Directory to save output images
 
         # Create directories if they do not exist
         os.makedirs(self.images_dir, exist_ok=True)
@@ -21,19 +21,19 @@ class ImageGen:
         self.pipe.load_lora_weights(tcd_lora_id)
         self.pipe.fuse_lora()
 
-    def generate_image(self, prompt, output_name):
-            output_image = self.pipe(
-                prompt=prompt,
-                num_inference_steps=4,
-                guidance_scale=0,
-                eta=0.3, 
-                generator=torch.Generator(device="cuda").manual_seed(random.randint(1, 1000)),
-            ).images[0]
-            print("Running image generation...")
-            print(prompt)
-
-            # Save the output image in the specified directory with a unique name for each image
-            output_image.save(os.path.join(self.images_dir, output_name + ".png"))
+    def generate_image(self, prompt, output_file_name):
+        output_image = self.pipe(
+            prompt=prompt,
+            num_inference_steps=4,
+            guidance_scale=0,
+            eta=0.3, 
+            generator=torch.Generator(device="cuda").manual_seed(random.randint(1, 1000)),
+        ).images[0]
+        print("Running image generation...")
+        print(prompt)
+        file_path = os.path.join(self.images_dir, output_file_name)  # Combine the directory with the filename
+        print(f"Saving to {file_path}")
+        output_image.save(file_path)
 
 # Code to execute only if this module is run directly
 if __name__ == "__main__":

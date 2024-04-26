@@ -1,4 +1,3 @@
-import json
 from openai import OpenAI
 from bs4 import BeautifulSoup
 from ImageGen import ImageGen

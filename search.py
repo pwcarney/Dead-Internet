@@ -1,5 +1,7 @@
 from ReaperEngine import ReaperEngine
 import json
+import os
+import re
 from bs4 import BeautifulSoup
 
 class Search:
@@ -23,7 +25,7 @@ class Search:
             "  'large_image': 'https://ecoexample.com/earth_day.jpg'\n"
             "}\n"
             "\n"
-            "Please generate 10 such search results in a list for the query provided. Respond ONLY with the json."
+            "Please generate 5 such search results in a list for the query provided. Respond ONLY with the json."
         )
 
         user_prompt = f"Generate search results for the query: '{query}'."
@@ -49,7 +51,6 @@ class Search:
         # Parse the JSON search results into a list of SearchResult objects
         search_results_list = []
         for result in search_results:
-            print(result)
             search_result = SearchResult(
                 small_logo=result['small_logo'],
                 website_name=result['website_name'],
@@ -71,6 +72,18 @@ class SearchResult:
         self.sub_links = sub_links 
         self.large_image = large_image
     
+    def get_filename_from_url(self, url):
+        # Extract the file name from the URL
+        filename = os.path.basename(url)
+        filename = os.path.splitext(filename)[0]
+        return filename
+
+    def generate_image_prompts(self):
+        # Generate prompts for both small logo and large image based on the search result content
+        logo_prompt = f"{self.website_name} logo"
+        large_image_prompt = f"{self.website_name} {self.description.split('.')[0]}"
+        return logo_prompt, large_image_prompt
+
     def render_html(self):
         # Creating HTML for sublinks, assuming you might want to append a '#' for now as the href
         sub_links_html = ''.join(f'<a class="level-item" href="#">{text}</a>' for text in self.sub_links)
@@ -112,7 +125,25 @@ if __name__ == "__main__":
     engine = ReaperEngine()
     user_query = "adventure sports travel"
     search_results = Search.get_search_list(engine.client, user_query)
+    print(search_results)
     search_results_object_list = Search.parse_search_results(json.loads(search_results))
+
+    # Generate images for the search results
+    for result in search_results_object_list:
+        # Generate prompts for both small logo and large image
+        logo_prompt, large_image_prompt = result.generate_image_prompts()
+
+        # Extract just the file name from the URLs, ensuring only the file name part is used
+        logo_filename = result.get_filename_from_url(result.small_logo) + ".png"
+        large_image_filename = result.get_filename_from_url(result.large_image) + ".png"
+
+        # Correct the paths used to generate and save images
+        result.small_logo = f"../images/{logo_filename}"
+        engine.image_gen.generate_image(logo_prompt, logo_filename)
+        
+        result.large_image = f"../images/{large_image_filename}"
+        engine.image_gen.generate_image(large_image_prompt, large_image_filename)
+        
     html_content = '\n'.join([result.render_html() for result in search_results_object_list])
 
     # Load the HTML file
