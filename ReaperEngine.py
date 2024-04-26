@@ -13,7 +13,7 @@ class ReaperEngine:
         self.client = OpenAI(base_url="http://localhost:11434/v1/") # Ollama is pretty cool
         self.internet_db = dict() 
 
-        #self.image_gen = ImageGen() 
+        self.image_gen = ImageGen() 
 
         self.temperature = 2.1
         self.max_tokens = 8000

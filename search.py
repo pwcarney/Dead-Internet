@@ -1,4 +1,6 @@
 from ReaperEngine import ReaperEngine
+import json
+from bs4 import BeautifulSoup
 
 class Search:
     @staticmethod
@@ -7,9 +9,9 @@ class Search:
             "Generate a list of creative and interesting fictional search results in JSON format based on the user-provided query. "
             "Each search result should be a JSON object with the following keys: "
             "'small_logo', 'website_name', 'website_url', 'description', 'sub_links', and 'large_image'. "
-            "Descriptions should creatively describe what each website offers, focusing on engaging content that would appeal to someone interested in the query topic. "
+            "Descriptions should creatively describe what each website offers, focusing on engaging content that would appeal to someone interested in the query topic. Vary the tone of the descriptions. Some sites might use formal language as a B2B service, others might be warm and engaging, aiming at families or individuals."
             "Sub_links should be a list of relevant topics or services offered by the website that are unique and tailored to the site's content. "
-            "Ensure that each search result is unique, avoiding repetitive or overly similar entries. "
+            "Each search result should reflect a different facet of the query topic. For instance, if the query is 'sustainable living', some results could focus on sustainable fashion, while others might specialize in green technology or organic farming. "
             "Websites should have inventive names and URLs that could plausibly relate to real services or topics. "
             "Here is an example of a JSON object for a single search result for a generic query 'sustainable living':\n"
             "{\n"
@@ -41,6 +43,24 @@ class Search:
         )
 
         return search_page_completion.choices[0].message.content
+    
+    @staticmethod
+    def parse_search_results(search_results):
+        # Parse the JSON search results into a list of SearchResult objects
+        search_results_list = []
+        for result in search_results:
+            print(result)
+            search_result = SearchResult(
+                small_logo=result['small_logo'],
+                website_name=result['website_name'],
+                website_url=result['website_url'],
+                description=result['description'],
+                sub_links=result['sub_links'],
+                large_image=result['large_image']
+            )
+            search_results_list.append(search_result)
+        
+        return search_results_list
 
 class SearchResult:
     def __init__(self, small_logo, website_name, website_url, description, sub_links, large_image):
@@ -86,9 +106,35 @@ class SearchResult:
         </div>
         """
         return html_content
+    
 
-# Code to execute only if this module is run directly
 if __name__ == "__main__":
     engine = ReaperEngine()
-    search_results = Search.get_search_list(engine.client, "adventure sports travel")
-    print(search_results)
+    user_query = "adventure sports travel"
+    search_results = Search.get_search_list(engine.client, user_query)
+    search_results_object_list = Search.parse_search_results(json.loads(search_results))
+    html_content = '\n'.join([result.render_html() for result in search_results_object_list])
+
+    # Load the HTML file
+    with open('static/html/base_templates/search.html', 'r') as file:
+        soup = BeautifulSoup(file, 'html.parser')
+
+    # Find the search input box and update its value with the user query
+    search_input = soup.find('input', {'class': 'input'})
+    if search_input:
+        search_input['value'] = user_query
+
+    # Find the placeholder or a specific container where results should be inserted
+    results_container = soup.find(id='results-container')
+    if not results_container:
+        results_container = soup.new_tag('div', id='results-container')
+        soup.body.append(results_container)
+
+    # Clear existing content if needed and insert new HTML
+    results_container.clear()
+    new_content = BeautifulSoup(html_content, 'html.parser')
+    results_container.append(new_content)
+
+    # Write the updated HTML back to the file
+    with open('static/html/search.html', 'w') as file:
+        file.write(str(soup))

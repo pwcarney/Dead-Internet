@@ -5,3 +5,4 @@ curpage.html
 *.pyc
 /images
 /sd_model
+static/html/search.html
